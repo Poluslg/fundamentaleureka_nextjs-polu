@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URI")
+}
+
+model User {
+  id                            String        @id @default(auto()) @map("_id") @db.ObjectId
+  name                          String?
+  email                         String?       @unique
+  password                      String?
+  emailVerified                 DateTime?
+  image                         String?
+  accounts                      Account[]
+  sessions                      Session[]
+  createdAt                     DateTime      @default(now())
+  updatedAt                     DateTime      @updatedAt
+  Assessment                    Assessment[]
+  CoverLetter                   CoverLetter[]
+  industryInsightId             String?
+  username                      String?
+  phoneNumber                   String?
+  Authenticator                 String?
+  membership                    Membership[]
+  accountSetupPasswordOtp       String?
+  accountSetupPasswordOtpExpire DateTime?
+  totalaccountSetupInputTry     Int?          @default(3)
+  forgotPasswordOtp             Int?
+  forgotPasswordOtpExpire       DateTime?
+  totalForgotPasswordInputTry   Int?
+  role                          UserRole      @default(USER)
+  accountSetup                  Boolean       @default(false)
+  customId                      String?
+  lastLogin                     DateTime?     @default(now())
+
+  resume          Resume?
+  industry        String?
+  IndustryInsight IndustryInsight? @relation(fields: [industry], references: [industry])
+  bio             String?
+  experience      Int?
+  skills          String[]
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.String
+  access_token      String? @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.String
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Assessment {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @db.ObjectId
+  user           User     @relation(fields: [userId], references: [id])
+  quizScore      Float // Overall quiz score
+  questions      Json[] // Array of {question, answer, userAnswer, isCorrect}
+  category       String // "Technical", "Behavioral", etc.
+  improvementTip String? // AI-generated improvement tip
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Resume {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId // One resume per user
+  user      User     @relation(fields: [userId], references: [id])
+  content   String?
+  atsScore  Float?
+  feedback  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CoverLetter {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @db.ObjectId
+  user           User     @relation(fields: [userId], references: [id])
+  content        String // Markdown content
+  jobDescription String?
+  companyName    String // Name of the company applying to
+  jobTitle       String // Position applying for
+  status         String   @default("draft") // draft, completed
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model IndustryInsight {
+  id                String    @id @default(cuid()) @map("_id")
+  industry          String    @unique
+  user              User[]
+  salaryRanges      Json[]
+  growthRate        Float?
+  demandLevel       String?
+  topSkills         String[]
+  marketOutlook     String? // "Positive", "Neutral", "Negative"
+  keyTrends         String[] // Array of current industry trends
+  recommendedSkills String[] // Skills recommended for the industry
+  lastUpdated       DateTime  @default(now())
+  nextUpdate        DateTime? // Scheduled update time
+}
+
+model Membership {
+  id               String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String            @db.ObjectId
+  user             User?             @relation(fields: [userId], references: [id])
+  membershipId     String?
+  membershipType   MembershipType?   @default(FREE)
+  paymentId        String?
+  paymentStatus    String?
+  totalAmt         Float             @default(0)
+  paymentDate      DateTime?
+  paymentValidity  DateTime?
+  membershipStatus MembershipStatus?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+enum MembershipType {
+  FREE
+  PREMIUM
+}
+
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+}
+
+enum UserRole {
+  ADMIN
+  USER
+}
