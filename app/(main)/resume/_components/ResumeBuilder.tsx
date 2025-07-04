@@ -65,9 +65,9 @@ function ResumeBuilder({ initialContent }: Props) {
     },
   });
 
+  // fn: saveResumeFn,
   const {
     loading: isSaving,
-    fn: saveResumeFn,
     data: saveResult,
     error: saveError,
   } = useFetch(saveResume);

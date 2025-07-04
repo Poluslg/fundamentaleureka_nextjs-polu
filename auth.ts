@@ -64,8 +64,8 @@ const authOptions: NextAuthConfig = {
           },
           data: {
             lastLogin: new Date(),
-          }
-        })
+          },
+        });
         return true;
       } else {
         //   if (account?.provider === "google") {

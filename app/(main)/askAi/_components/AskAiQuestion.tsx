@@ -104,7 +104,7 @@ function AskAiQuestion() {
             {/* AI Response */}
             {results[index] && (
               <div className="md:max-w-4xl max-w-xs text-gray-800 p-3 rounded-lg shadow">
-                <div className="flex items-center gap-2">
+                <div className="flex items-start gap-2">
                   <Avatar>
                     <AvatarImage src="/Logo.png" />
                     <AvatarFallback>FME</AvatarFallback>

@@ -9,6 +9,10 @@ const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const model = genAi.getGenerativeModel({
   model: "gemini-1.5-flash",
 });
+const openRouter = new OpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY!,
+});
 
 // const openai = new OpenAI({
 //   // baseURL: "https://api.deepseek.com",
@@ -60,11 +64,23 @@ export async function askAiQuestion({ message }: { message: string }) {
     //   ],
     // });
     // console.log(response);
- 
-    const result = await model.generateContent(message, {
-      timeout: 10000,
+
+    // const result = await model.generateContent(message, {
+    //   timeout: 10000,
+    // });
+    // const improvedContent = result?.response?.text?.()
+    //   ? result.response.text().trim()
+    //   : "Error: Unable to generate content.";
+
+    const completion = await openRouter.chat.completions.create({
+      model: "deepseek/deepseek-chat-v3-0324:free",
+      messages: [
+        {
+          role: "user",
+          content: message,
+        },
+      ],
     });
-    const improvedContent = result?.response?.text?.() ? result.response.text().trim() : "Error: Unable to generate content.";
 
     // const completion = await openai.chat.completions.create({
     //   model: "deepseek/deepseek-r1:free",
@@ -90,9 +106,9 @@ export async function askAiQuestion({ message }: { message: string }) {
     //   store: true,
     // });
 
-    // const improvedContent = completion.choices[0].message.content;
+    const res = completion.choices[0]?.message?.content!;
 
-    return improvedContent;
+    return res;
 
     // return;
   }

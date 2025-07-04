@@ -3,12 +3,19 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 
 const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-const model = genAi.getGenerativeModel({
-  model: "gemini-1.5-flash",
+// const model = genAi.getGenerativeModel({
+//   model: "gemini-1.5-flash",
+// });
+
+const openRouter = new OpenAI({
+  baseURL: "https://openrouter.ai/api/v1",
+  apiKey: process.env.OPENROUTER_API_KEY!,
 });
+
 export async function getGenerateQuiz(quistionsCount: number) {
   const session = await auth();
   const email = session?.user?.email as string;
@@ -20,9 +27,11 @@ export async function getGenerateQuiz(quistionsCount: number) {
   if (!user) throw new Error("User not found");
   try {
     const prompt = `
-  Generate ${quistionsCount} technical interview questions for a ${user.industry
-      } professional${user.skills?.length ? ` with expertise in ${user.skills.join(", ")}` : ""
-      }.
+  Generate ${quistionsCount} technical interview questions for a ${
+      user.industry
+    } professional${
+      user.skills?.length ? ` with expertise in ${user.skills.join(", ")}` : ""
+    }.
   
   Each question should be multiple choice with 4 options.
   
@@ -38,12 +47,25 @@ export async function getGenerateQuiz(quistionsCount: number) {
     ]
   }
 `;
-
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text();
-    const cleneText = text.replace(/```(?:json)?\n?/g, "").trim();
-    const quize = JSON.parse(cleneText);
+    const completion = await openRouter.chat.completions.create({
+      model: "deepseek/deepseek-chat-v3-0324:free",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
+    const rawText = completion.choices[0]?.message?.content || "";
+    // Remove markdown formatting like ```json
+    const cleaned = rawText
+      .replace(/```(?:json)?\n?([\s\S]*?)```/, "$1")
+      .trim();
+    // const result = await model.generateContent(prompt);
+    // const response = result.response;
+    // const text = response.text();
+    // const cleneText = text.replace(/```(?:json)?\n?/g, "").trim();
+    const quize = JSON.parse(cleaned);
     return quize.questions;
   } catch (error) {
     throw new Error("Failed to generate quiz");
@@ -106,9 +128,20 @@ async function saveQuizeResult(question: any, answers: string, score: number) {
   `;
 
     try {
-      const result = await model.generateContent(improvementPrompt);
-      const response = result.response;
-      improvementTip = response.text().trim();
+      const completion = await openRouter.chat.completions.create({
+        model: "deepseek/deepseek-chat-v3-0324:free",
+        messages: [
+          {
+            role: "user",
+            content: improvementPrompt,
+          },
+        ],
+      });
+      const rawText = completion.choices[0]?.message?.content || "";
+      const cleaned = rawText
+        .replace(/```(?:json)?\n?([\s\S]*?)```/, "$1")
+        .trim();
+      improvementTip = cleaned;
     } catch (error) {
       console.log(error);
     }
