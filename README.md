@@ -32,7 +32,7 @@
 - **UI Component Library**:ShadCn
 - **Database**: MongoDB (Mongoose, Prisma in transition)
 - **AI Integration**: Gemini API (Google AI)
-- **State & Forms**: React Hook Form, Zod, Zustand (if used)
+- **State & Forms**: React Hook Form, Zod
 
 ---
 
