@@ -1,12 +1,5 @@
 # 🚀 FundamentalEureka
 
-Final Year B.Tech Project by 
-**PRAHLAD BISWAS**
-**SOUMODEEP ROY**
-**BAIDURJYA SIKDAR** 
-**BIKASH SAH** 
-In the Year of **2025** at **Siliguri Institute of Technology**
-
 
 **FundamentalEureka** is a next-gen AI-powered platform designed to empower students and job seekers. It offers intelligent career guidance tools including AI-assisted resume building, mock interviews, real-time industry insights, and interactive AI queries — all in one place.
 
