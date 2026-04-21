@@ -168,7 +168,7 @@ export async function generateOtp() {
   if (!user) throw new Error("User not found");
   try {
     const otp = Math.floor(Math.random() * 900000) + 100000;
-    // console.log(otp)
+    console.log(otp)
     const hwOtp = await hash(otp.toString(), 10);
     const expireTime = new Date().getTime() + 60 * 60 * 1000;
     const totalForgotPasswordInputTry = 3;

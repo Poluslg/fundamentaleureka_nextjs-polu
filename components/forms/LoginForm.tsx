@@ -17,7 +17,6 @@ import GoogleSignInButton from "../GoogleSignInButton";
 // });
 
 function LoginForm() {
-
   const [isEmail, setIsEmail] = useState(false);
   const [email, setEmail] = useState(String);
   const [passwordField, setPasswordField] = useState(false);
@@ -35,7 +34,7 @@ function LoginForm() {
   // });
 
   const handleEmailVarification = async (
-    e: React.FormEvent<HTMLFormElement>
+    e: React.FormEvent<HTMLFormElement>,
   ) => {
     e.preventDefault();
     if (email) {
@@ -86,9 +85,25 @@ function LoginForm() {
     }
   };
 
+  const handleTestCredentialSignIn = async () => {
+    try {
+      const res = await signIn("credentials", {
+        email: "test@test.com",
+        password: "test@test.com",
+        redirect: true,
+        redirectTo: "/",
+      });
+      console.log(res);
+    } catch (error) {
+      const err = error as Error;
+      alert(err.message); // toast required
+    }
+  };
+
+
+
   return (
     <>
-      
       <div className="flex min-h-screen items-center justify-center">
         <div className="max-w-md w-full space-y-8 p-10 bg-muted rounded-xl shadow-lg z-10  relative">
           <Image
@@ -219,6 +234,14 @@ function LoginForm() {
               </button>
             </form>
           )}
+          <div className="flex items-center justify-center w-full h-12">
+            <button
+              onClick={handleTestCredentialSignIn}
+              className="border border-white p-2 hover:bg-white/10"
+            >
+              SIGN IN TEST CREDENTIALS
+            </button>
+          </div>
           <div className="w-full place-items-center">
             <GoogleSignInButton />
           </div>
