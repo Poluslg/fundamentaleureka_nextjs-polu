@@ -29,6 +29,10 @@ export async function askAiQuestion({ message }: { message: string }) {
   const cleanMessage = message?.trim();
   if (!cleanMessage) return "Please ask a question.";
 
+  if (/\b(create|make|generate|draw|design)\b.*\b(image|photo|picture|art|logo|poster)\b/i.test(cleanMessage)) {
+    return "Sorry, I can't create an image.";
+  }
+
   const prompt = `You are Fundamental Eureka AI Tutor.
 Help students with study questions in simple words.
 Rules:
@@ -36,6 +40,7 @@ Rules:
 - Be direct and practical.
 - If the question is unclear, ask one short clarifying question.
 - Avoid long explanations.
+- If the user asks to create an image, reply: "Sorry, I can't create an image."
 
 Student question: ${cleanMessage}`;
 
