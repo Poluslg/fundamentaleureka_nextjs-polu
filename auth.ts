@@ -138,7 +138,7 @@ const authOptions: NextAuthConfig = {
   pages: {
     signIn: "/auth/login",
     newUser: "/auth/signup",
-    // error: "/auth/error",
+    error: "/auth/error",
   },
   secret: process.env.AUTH_SECRET,
   // debug: process.env.NODE_ENV !== "production",

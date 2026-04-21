@@ -20,7 +20,7 @@ interface Updatinguser {
 }
 
 export async function updateUser(data: Updatinguser): Promise<any> {
-  console.log("Updating user with data:", data);
+  // console.log("Updating user with data:", data);
   const session = await auth();
   const email = session?.user?.email as string;
   const user = await prisma.user.findFirst({
@@ -168,6 +168,7 @@ export async function generateOtp() {
   if (!user) throw new Error("User not found");
   try {
     const otp = Math.floor(Math.random() * 900000) + 100000;
+    // console.log(otp)
     const hwOtp = await hash(otp.toString(), 10);
     const expireTime = new Date().getTime() + 60 * 60 * 1000;
     const totalForgotPasswordInputTry = 3;

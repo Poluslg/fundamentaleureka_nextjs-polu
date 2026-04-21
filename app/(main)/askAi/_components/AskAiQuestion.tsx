@@ -77,7 +77,7 @@ function AskAiQuestion() {
 
   return (
     <div>
-      <div className="flex flex-col gap-2 p-4">
+      <div className="flex flex-col gap-2 p-4 min-h-screen">
         {userInput.map((input, index) => (
           <div
             key={`input-${index}`}
@@ -119,7 +119,7 @@ function AskAiQuestion() {
         ))}
       </div>
 
-      <div className="bg-muted/35 dark:text-gray-400 rounded-lg text-md flex items-center justify-between px-5 w-full h-fit">
+      <div className="bg-muted/35 dark:text-gray-400 rounded-lg text-md flex items-center justify-between px-5 w-full h-fit sticky bottom-0">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(sendMessage)}

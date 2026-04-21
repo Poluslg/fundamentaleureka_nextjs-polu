@@ -3,18 +3,62 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import OpenAI from "openai";
 
 const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-// const model = genAi.getGenerativeModel({
-//   model: "gemini-1.5-flash",
-// });
+const QUIZ_MODEL_CANDIDATES = [
+  "gemini-3-flash-preview",
+];
 
-const openRouter = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY!,
-});
+const wait = (ms: number) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+function isRetryableAiError(error: unknown) {
+  if (!error) return false;
+  const message = error instanceof Error ? error.message : String(error);
+  return /503|429|500|Service Unavailable|high demand|temporar|aborted|timeout|deadline/i.test(
+    message
+  );
+}
+
+async function generateWithRetry(prompt: string) {
+  let lastError: unknown = null;
+
+  for (const modelName of QUIZ_MODEL_CANDIDATES) {
+    const model = genAi.getGenerativeModel({
+      model: modelName,
+    });
+
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        return await model.generateContent(prompt, {
+          timeout: 30000,
+        });
+      } catch (error) {
+        lastError = error;
+        const canRetry = isRetryableAiError(error) && attempt < 3;
+        if (canRetry) {
+          await wait(400 * attempt);
+          continue;
+        }
+        if (!isRetryableAiError(error)) {
+          break;
+        }
+      }
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("AI service unavailable");
+}
+
+// const openRouter = new OpenAI({
+//   baseURL: "https://openrouter.ai/api/v1",
+//   apiKey: process.env.OPENROUTER_API_KEY!,
+// });
 
 export async function getGenerateQuiz(quistionsCount: number) {
   const session = await auth();
@@ -25,13 +69,16 @@ export async function getGenerateQuiz(quistionsCount: number) {
     },
   });
   if (!user) throw new Error("User not found");
+
+  const totalQuestions = Number(quistionsCount) || 10;
+  const safeQuestionCount = Math.min(Math.max(totalQuestions, 5), 30);
+  const safeIndustry = user.industry?.trim() || "software";
+
   try {
     const prompt = `
-  Generate ${quistionsCount} technical interview questions for a ${
-      user.industry
-    } professional${
-      user.skills?.length ? ` with expertise in ${user.skills.join(", ")}` : ""
-    }.
+  Generate ${safeQuestionCount} technical interview questions for a ${safeIndustry
+      } professional${user.skills?.length ? ` with expertise in ${user.skills.join(", ")}` : ""
+      }.
   
   Each question should be multiple choice with 4 options.
   
@@ -47,28 +94,42 @@ export async function getGenerateQuiz(quistionsCount: number) {
     ]
   }
 `;
-    const completion = await openRouter.chat.completions.create({
-      model: "deepseek/deepseek-chat-v3-0324:free",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
-    const rawText = completion.choices[0]?.message?.content || "";
-    // Remove markdown formatting like ```json
-    const cleaned = rawText
-      .replace(/```(?:json)?\n?([\s\S]*?)```/, "$1")
+
+    const result = await generateWithRetry(prompt);
+    // const completion = await openRouter.chat.completions.create({
+    //   model: "deepseek/deepseek-chat-v3-0324:free",
+    //   messages: [
+    //     {
+    //       role: "user",
+    //       content: prompt,
+    //     },
+    //   ],
+    // });
+    const improvedContent = result?.response?.text?.()
+      ? result.response.text().trim()
+      : "";
+
+    const cleaned = improvedContent
+      .replace(/```json\s*/gi, "")
+      .replace(/```/g, "")
       .trim();
+
+    const jsonBlockMatch = cleaned.match(/\{[\s\S]*\}/);
+    const jsonText = jsonBlockMatch ? jsonBlockMatch[0] : cleaned;
     // const result = await model.generateContent(prompt);
     // const response = result.response;
     // const text = response.text();
     // const cleneText = text.replace(/```(?:json)?\n?/g, "").trim();
-    const quize = JSON.parse(cleaned);
+    const quize = JSON.parse(jsonText);
+    if (!quize || !Array.isArray(quize.questions) || quize.questions.length === 0) {
+      throw new Error("AI returned an invalid questions format");
+    }
+
     return quize.questions;
   } catch (error) {
-    throw new Error("Failed to generate quiz");
+    const message =
+      error instanceof Error ? error.message : "Unknown generation error";
+    throw new Error(`Failed to generate quiz: ${message}`);
   }
 }
 async function saveQuizeResult(question: any, answers: string, score: number) {
@@ -128,17 +189,13 @@ async function saveQuizeResult(question: any, answers: string, score: number) {
   `;
 
     try {
-      const completion = await openRouter.chat.completions.create({
-        model: "deepseek/deepseek-chat-v3-0324:free",
-        messages: [
-          {
-            role: "user",
-            content: improvementPrompt,
-          },
-        ],
-      });
-      const rawText = completion.choices[0]?.message?.content || "";
-      const cleaned = rawText
+      const completion = await generateWithRetry(improvementPrompt);
+
+      const improvedContent = completion?.response?.text?.()
+        ? completion.response.text().trim()
+        : "I could not generate an answer. Please try again.";
+
+      const cleaned = improvedContent
         .replace(/```(?:json)?\n?([\s\S]*?)```/, "$1")
         .trim();
       improvementTip = cleaned;

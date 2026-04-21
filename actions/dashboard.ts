@@ -8,13 +8,18 @@ import OpenAI from "openai";
 const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const model = genAi.getGenerativeModel({
-  model: "gemini-1.5-flash",
+  model: "gemini-3-flash-preview",
+  // generationConfig: {
+  //   maxOutputTokens: 140,
+  //   temperature: 0.4,
+  // },
 });
 
-const openRouter = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY!,
-});
+
+// const openRouter = new OpenAI({
+//   baseURL: "https://openrouter.ai/api/v1",
+//   apiKey: process.env.OPENROUTER_API_KEY!,
+// });
 
 export const generateAiInsights = async (industry: string) => {
   const prompt = `
@@ -37,19 +42,15 @@ export const generateAiInsights = async (industry: string) => {
   Include at least 5 skills and trends.
   `;
 
-  const completion = await openRouter.chat.completions.create({
-    model: "deepseek/deepseek-chat-v3-0324:free",
-    messages: [
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
+  const result = await model.generateContent(prompt, {
+    timeout: 10000,
   });
 
-  const rawText = completion.choices[0]?.message?.content || "";
-  // Remove markdown formatting like ```json
-  const cleaned = rawText.replace(/```(?:json)?\n?([\s\S]*?)```/, "$1").trim();
+  const improvedContent = result?.response?.text?.()
+    ? result.response.text().trim()
+    : "I could not generate an answer. Please try again.";
+
+  const cleaned = improvedContent.replace(/```(?:json)?\n?([\s\S]*?)```/, "$1").trim();
 
   try {
     return JSON.parse(cleaned);
