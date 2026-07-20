@@ -7,7 +7,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const QUIZ_MODEL_CANDIDATES = [
-  "gemini-3-flash-preview",
+  "gemini-3.5-flash",
 ];
 
 const wait = (ms: number) =>

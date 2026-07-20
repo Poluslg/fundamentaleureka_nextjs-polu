@@ -34,71 +34,38 @@ export async function updateUser(data: Updatinguser): Promise<any> {
   if (!user) throw new Error("User not found");
 
   try {
-    const result: UpdateResult = await prisma.$transaction(
-      async (tx) => {
-        let industryInsight = await tx.industryInsight.findFirst({
-          where: {
-            industry: data.industry,
-          },
-        });
-        if (!industryInsight) {
-          // industryInsight = await prisma.industryInsight.create({
-          //   data: {
-          //     industry: data.industry,
-          //     salaryRanges: [],
-          //     growthRate: 0,
-          //     demandLevel: "Medium",
-          //     nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          //     topSkills: [],
-          //     keyTrends: [],
-          //     marketOutlook: "Neutral",
-          //     recommendedSkills: [],
-          //   },
-          // });
-          const insights = await generateAiInsights(data?.industry);
-          industryInsight = await prisma.industryInsight.create({
-            data: {
-              industry: data?.industry,
-              ...insights,
-              nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            },
-          });
-        }
-        //  else {
-        //   const insights = await generateAiInsights(data?.industry);
-        //   industryInsight = await tx.industryInsight.update({
-        //     where: {
-        //       id: industryInsight.id,
-        //     },
-
-        //     data: {
-        //       industry: data?.industry,
-        //       ...insights,
-        //       nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        //     },
-        //   });
-        // }
-
-        const updatedUser = await tx.user.update({
-          where: {
-            email,
-          },
-          data: {
-            industry: data.industry,
-            experience: data.experience,
-            bio: data.bio,
-            skills: data.skills,
-          },
-        });
-        return { updatedUser, industryInsight };
+    let industryInsight = await prisma.industryInsight.findFirst({
+      where: {
+        industry: data.industry,
       },
-      {
-        timeout: 1000,
-      }
-    );
-    // console.log("User updated successfully", result);
-    return user;
-  } catch {
+    });
+
+    if (!industryInsight) {
+      const insights = await generateAiInsights(data?.industry);
+      industryInsight = await prisma.industryInsight.create({
+        data: {
+          industry: data?.industry,
+          ...insights,
+          nextUpdate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: {
+        email,
+      },
+      data: {
+        industry: data.industry,
+        experience: data.experience,
+        bio: data.bio,
+        skills: data.skills,
+      },
+    });
+
+    return updatedUser;
+  } catch (error) {
+    console.error("Error updating user profile:", error);
     throw new Error("Something went wrong");
   }
 }

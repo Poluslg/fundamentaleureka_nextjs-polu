@@ -6,7 +6,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const model = genAi.getGenerativeModel({
-  model: "gemini-3-flash-preview",
+  model: "gemini-3.5-flash",
   // generationConfig: {
   //   maxOutputTokens: 140,
   //   temperature: 0.4,
@@ -45,7 +45,7 @@ Rules:
 Student question: ${cleanMessage}`;
 
   const result = await model.generateContent(prompt, {
-    timeout: 10000,
+    timeout: 30000,
   });
 
   const improvedContent = result?.response?.text?.()
