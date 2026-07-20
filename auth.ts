@@ -42,7 +42,7 @@ const authOptions: NextAuthConfig = {
             user.password as string
           );
           if (!isPasswordMatch) throw new Error("Invalid email or password.");
-          return { name: user.name, email: user.email };
+          return { id: user.id, name: user.name, email: user.email };
         } catch (error) {
           throw new Error("Unable to proceed, Please try after some time.");
         }
@@ -141,7 +141,7 @@ const authOptions: NextAuthConfig = {
     error: "/auth/error",
   },
   secret: process.env.AUTH_SECRET,
-  // debug: process.env.NODE_ENV !== "production",
+  debug: process.env.NODE_ENV !== "production",
 } satisfies NextAuthConfig;
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);

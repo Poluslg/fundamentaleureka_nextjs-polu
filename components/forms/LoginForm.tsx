@@ -81,7 +81,7 @@ function LoginForm() {
       console.log(res);
     } catch (error) {
       const err = error as Error;
-      alert(err.message); // toast required
+      toast.error(err.message); // toast required
     }
   };
 
@@ -96,7 +96,7 @@ function LoginForm() {
       console.log(res);
     } catch (error) {
       const err = error as Error;
-      alert(err.message); // toast required
+      toast.error(err.message); // toast required
     }
   };
 
