@@ -2,7 +2,10 @@
 
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
-import { auth } from "./auth";
+import NextAuth from "next-auth";
+import authConfig from "./auth.config";
+
+const { auth } = NextAuth(authConfig);
 
 const url = process.env.WEB_URL! || "http://localhost:3000";
 const privateRoutes = [
@@ -17,9 +20,8 @@ const privateRoutes = [
   "/account-setup",
 ];
 
-export default async function middleware(req: NextRequest) {
-  const session = await auth();
-  const isLoggedIn = !!session;
+export default auth((req) => {
+  const isLoggedIn = !!req.auth;
   const { nextUrl } = req;
   const isPrivateRoutes = privateRoutes.some(
     (route) =>
@@ -41,7 +43,7 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.redirect(`${url}auth/login`);
   }
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
