@@ -1,7 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
-// import { NextApiRequest, NextApiResponse } from "next";
 import { NextResponse, NextRequest } from "next/server";
+import { z } from "zod";
+
+const signupSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  username: z.string().min(1),
+  phone: z.string().min(10).max(10).regex(/^\d+$/),
+});
 
 const handleSignup = async (req: NextRequest) => {
   if (req.method !== "POST") {
@@ -11,14 +18,17 @@ const handleSignup = async (req: NextRequest) => {
     );
   }
 
-  const { email, password, username, phone } = await req.json();
+  const body = await req.json();
+  const parsed = signupSchema.safeParse(body);
 
-  if (!email || !password || !username || !phone) {
+  if (!parsed.success) {
     return NextResponse.json(
       { message: "All fields are required" },
       { status: 400 }
     );
   }
+
+  const { email, password, username, phone } = parsed.data;
   try {
     const user = await prisma.user.findFirst({
       where: {

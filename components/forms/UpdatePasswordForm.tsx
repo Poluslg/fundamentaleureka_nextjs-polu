@@ -10,9 +10,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2Icon } from "lucide-react";
 
-type Props = { email: string };
+type Props = { email: string; otp: string | null };
 
-function UpdatePasswordForm({ email }: Props) {
+function UpdatePasswordForm({ email, otp }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [showconfirmPassword, showConfirmPassword] = useState(false);
   const [isloading, setIsLoading] = useState(false);
@@ -39,9 +39,14 @@ function UpdatePasswordForm({ email }: Props) {
   });
   const onSubmit = async (values: z.infer<typeof FormSchema>) => {
     const password = values.password;
+    if (!otp) {
+      toast.error("Please verify OTP again");
+      router.push("/auth/forgotpassword");
+      return;
+    }
     try {
       const response = await fetch("/api/updatepassword", {
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, otp, password }),
         headers: {
           "Content-Type": "application/json",
         },
@@ -52,7 +57,9 @@ function UpdatePasswordForm({ email }: Props) {
       if (data.message === "Password Sucessfully Update") {
         toast.success("Password Sucessfully Update");
         setIsLoading(false);
-        router.push("/login");
+        sessionStorage.removeItem("resetOtp");
+        sessionStorage.removeItem("resetEmail");
+        router.push("/auth/login");
       } else if (data.message === "something went wrong") {
         toast.error("something went wrong");
         setIsLoading(false);

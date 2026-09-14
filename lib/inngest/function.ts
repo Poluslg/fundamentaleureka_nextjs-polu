@@ -33,10 +33,6 @@ const generateIndustryInsights = inngest.createFunction(
         Growth rate should be a percentage.
         Include at least 5 skills and trends.
       `;
-      //   const res = await step.ai.wrap("gpt", generateText, {
-      //     model: openai("gpt-4-turbo"),
-      //     prompt: "What is love?"
-      //   });
 
       const model = genAi.getGenerativeModel({
         model: "gemini-1.5-flash",

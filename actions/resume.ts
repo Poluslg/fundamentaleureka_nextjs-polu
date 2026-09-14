@@ -3,27 +3,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { revalidatePath } from "next/cache";
-import OpenAI from "openai";
 
 const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const model = genAi.getGenerativeModel({
   model: "gemini-3.5-flash",
-  // generationConfig: {
-  //   maxOutputTokens: 140,
-  //   temperature: 0.4,
-  // },
 });
-
-// const openai = new OpenAI({
-//   // baseURL: "https://api.deepseek.com",
-//   baseURL: "https://openrouter.ai/api/v1",
-//   apiKey: process.env.DEEPSEEK_API_KEY,
-// });
-// const openRouter = new OpenAI({
-//   baseURL: "https://openrouter.ai/api/v1",
-//   apiKey: process.env.OPENROUTER_API_KEY!,
-// });
 
 export async function saveResume(content: string) {
   if (!content) throw new Error("Content is required to save resume");
@@ -76,7 +61,6 @@ export async function inproveWithAi({
   current: string;
   type: string;
 }) {
-  console.log("debugger", type);
   const session = await auth();
   if (!session?.user?.email) throw new Error("User session not found");
 
@@ -111,58 +95,16 @@ export async function inproveWithAi({
     `;
     }
 
-    // const prompt = `
-    //   As an expert resume writer, improve the following ${type} description for a ${user.industry} professional.
-    //   Make it more impactful, quantifiable, and aligned with industry standards.
-    //   Current content: "${current}"
-
-    //   Requirements:
-    //   1. Use action verbs
-    //   2. Include metrics and results where possible
-    //   3. Highlight relevant technical skills
-    //   4. Keep it concise but detailed
-    //   5. Focus on achievements over responsibilities
-    //   6. Use industry-specific keywords
-
-    //   Format the response as a single paragraph without any additional text or explanations.
-    // `;
-
-    // const completion = await openai.chat.completions.create({
-    //   model: "deepseek/deepseek-r1:free",
-    //   messages: [
-    //     { role: "system", content: `As an expert resume writer, improve the following ${type} description for a ${user.industry} professional Ensure the description is formatted as a single paragraph write 2-3 line without any additional text or explanations. Maintain a confident and professional tone. ` },
-    //     {
-    //       role: "user",
-    //       content: current,
-    //     },
-    //   ],
-    //   store: true,
-    // });
-    // const improvedContent = completion.choices[0].message.content;
-
-    // console.log(prompt)
-
     const result = await model.generateContent(prompt, {
       timeout: 30000,
     });
 
-    // const completion = await openRouter.chat.completions.create({
-    //   model: "deepseek/deepseek-chat-v3-0324:free",
-    //   messages: [
-    //     {
-    //       role: "user",
-    //       content: prompt,
-    //     },
-    //   ],
-    // });
     const improvedContent = result?.response?.text?.()
       ? result.response.text().trim()
       : "I could not generate an answer. Please try again.";
     const cleaned = improvedContent
       .replace(/```(?:json)?\n?([\s\S]*?)```/, "$1")
       .trim();
-    // const result = await model.generateContent(prompt);
-    // const improvedContent = result.response.text().trim();
 
     return cleaned;
   } catch (error) {

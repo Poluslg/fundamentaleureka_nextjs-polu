@@ -55,14 +55,10 @@ async function generateWithRetry(prompt: string) {
     : new Error("AI service unavailable");
 }
 
-// const openRouter = new OpenAI({
-//   baseURL: "https://openrouter.ai/api/v1",
-//   apiKey: process.env.OPENROUTER_API_KEY!,
-// });
-
 export async function getGenerateQuiz(quistionsCount: number) {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findUnique({
     where: {
       email,
@@ -96,15 +92,6 @@ export async function getGenerateQuiz(quistionsCount: number) {
 `;
 
     const result = await generateWithRetry(prompt);
-    // const completion = await openRouter.chat.completions.create({
-    //   model: "deepseek/deepseek-chat-v3-0324:free",
-    //   messages: [
-    //     {
-    //       role: "user",
-    //       content: prompt,
-    //     },
-    //   ],
-    // });
     const improvedContent = result?.response?.text?.()
       ? result.response.text().trim()
       : "";
@@ -116,10 +103,6 @@ export async function getGenerateQuiz(quistionsCount: number) {
 
     const jsonBlockMatch = cleaned.match(/\{[\s\S]*\}/);
     const jsonText = jsonBlockMatch ? jsonBlockMatch[0] : cleaned;
-    // const result = await model.generateContent(prompt);
-    // const response = result.response;
-    // const text = response.text();
-    // const cleneText = text.replace(/```(?:json)?\n?/g, "").trim();
     const quize = JSON.parse(jsonText);
     if (!quize || !Array.isArray(quize.questions) || quize.questions.length === 0) {
       throw new Error("AI returned an invalid questions format");
@@ -134,7 +117,8 @@ export async function getGenerateQuiz(quistionsCount: number) {
 }
 async function saveQuizeResult(question: any, answers: string, score: number) {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findUnique({
     where: {
       email,
@@ -228,7 +212,8 @@ export default saveQuizeResult;
 
 export async function getAssessments() {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findUnique({
     where: {
       email,

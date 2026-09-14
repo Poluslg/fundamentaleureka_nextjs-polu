@@ -13,14 +13,18 @@ const privateRoutes = [
   "/ai-cover-letter",
   "/interview",
   "/resume",
-
+  "/admin",
+  "/account-setup",
 ];
 
 export default async function middleware(req: NextRequest) {
   const session = await auth();
   const isLoggedIn = !!session;
   const { nextUrl } = req;
-  const isPrivateRoutes = privateRoutes.includes(nextUrl.pathname);
+  const isPrivateRoutes = privateRoutes.some(
+    (route) =>
+      nextUrl.pathname === route || nextUrl.pathname.startsWith(`${route}/`)
+  );
   const isAuthRoute = nextUrl.pathname.includes("/auth");
   const isApiRoute = nextUrl.pathname.includes("/api");
 

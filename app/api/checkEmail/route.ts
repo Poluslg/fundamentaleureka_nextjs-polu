@@ -24,7 +24,11 @@ const checkEmail = async (req: NextRequest) => {
         );
       }
     } catch (error) {
-      return NextResponse.json({ message: error }, { status: 400 });
+      console.error("checkEmail error:", error);
+      return NextResponse.json(
+        { message: "Please try again later" },
+        { status: 400 }
+      );
     }
 };
 

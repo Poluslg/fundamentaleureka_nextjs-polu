@@ -28,9 +28,9 @@
 - **Frontend**: Next.js (App Router), React, Tailwind CSS
 - **Backend**: Node.js, Next.js API Routes
 - **Authentication**: NextAuth.js (Google OAuth)(credential)
-- **Mail**:Resend Api
+- **Mail**: SMTP (Nodemailer)
 - **UI Component Library**:ShadCn
-- **Database**: MongoDB (Mongoose, Prisma in transition)
+- **Database**: PostgreSQL (Prisma)
 - **AI Integration**: Gemini API (Google AI)
 - **State & Forms**: React Hook Form, Zod
 

@@ -63,15 +63,9 @@ const verifyEmailForgotOtp = async (req: NextRequest) => {
       );
     }
 
-    await prisma.user.update({
-      where: { email: useremail },
-      data: {
-        forgotPasswordOtp: null,
-        forgotPasswordOtpExpire: null,
-        totalForgotPasswordInputTry: null,
-      },
-    });
-
+    // The OTP is intentionally left intact here (not cleared) so that
+    // /api/updatepassword can independently re-verify it before allowing a
+    // password change. It is single-use and only cleared there.
     return NextResponse.json(
       { message: "OTP verified successfully" },
       { status: 200 }

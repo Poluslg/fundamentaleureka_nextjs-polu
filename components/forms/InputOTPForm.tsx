@@ -55,11 +55,13 @@ export function InputOTPForm() {
       const data = await response.json();
 
       setIsLoading(false);
-      if (data.message === "OTP Verify Successfully") {
+      if (data.message === "OTP verified successfully") {
         toast.success("OTP Verified Successfully");
         setIsLoading(false);
+        sessionStorage.setItem("resetOtp", otp);
+        sessionStorage.setItem("resetEmail", useremail as string);
         router.push(`/updatepassword/${random}?email=${useremail}`);
-      } else if (data.message === "OTP Expired") {
+      } else if (data.message === "OTP expired") {
         toast.error("OTP Expired");
       } else if (data.message.startsWith("Invalid OTP. Attempts left:")) {
         const attemptsLeft = data.message.split(":")[1].trim();
@@ -69,15 +71,10 @@ export function InputOTPForm() {
         } else {
           toast.error(`Invalid OTP. Attempts left: ${attemptsLeft}`);
         }
-      } else if (data.message === "User Not Found") {
+      } else if (data.message === "User not found") {
         toast.error("User not found");
-      } else if (data.message === "Please try again later") {
-        toast.error("Please try again later");
       } else {
-        if (data.message === "OTP Verify Successfully")
-          toast.error("OTP Verified Successfully");
-        router.push(`/updatepassword/${random}?email=${useremail}`);
-        // toast.error("Invalid OTP");
+        toast.error(data.message || "Please try again later");
       }
       setIsLoading(false);
     } catch (error) {

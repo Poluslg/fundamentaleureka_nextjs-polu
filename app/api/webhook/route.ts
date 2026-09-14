@@ -1,70 +1,71 @@
-// import Stripe from "stripe";
-import { NextRequest } from "next/server";
-// import { headers } from "next/headers";
-// import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+import { prisma } from "@/lib/prisma";
 
-// const stripe = new Stripe(
-//   "sk_test_51Qk8U6SBdpnWxAhoACoXGG9ayGWZQDVvJx1psfCOHGx3inNxrF730c0IazvJig8sy5vxOxh8mHReCVwQ5XNKHMQq00W6Pnyaco"
-// );
-// session: Stripe.Checkout.Session
-
-// const fulfillOrder = async () => {
-//   try {
-//     await prisma.membership.create({
-//       data: {
-//         userId: session?.metadata?.userId,
-//         membershipId: session.id,
-//         membershipType: "PREMIUM",
-//         paymentDate: new Date(session.created * 1000),
-//         paymentValidity: new Date(session?.metadata?.validity!),
-//         paymentStatus: session.payment_status,
-//         totalAmt: session?.amount_total! / 100,
-//         membershipStatus: "ACTIVE",
-//       },
-//     });
-
-//     console.log(`SUCCESS: Order ${session.id} has been added to the database`);
-//   } catch (error) {
-//     console.error("Error in fulfillOrder:", error);
-//     throw error;
-//   }
-// };
-
-export async function POST(request: NextRequest) {
-  const body = await request.text();
-  console.log(body);
-  // const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-  // const sig = (await headers()).get("stripe-signature") as string;
-  // let event: Stripe.Event;
-  try {
-    // event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
-  } catch (err) {
-    return new Response(`Webhook Error: ${err}`, {
-      status: 400,
-    });
+async function fulfillCheckout(session: Stripe.Checkout.Session, stripe: Stripe) {
+  const userId = session.metadata?.userId || session.client_reference_id;
+  if (!userId) {
+    console.error("Checkout session completed without a userId reference:", session.id);
+    return;
   }
 
-  // switch (event.type) {
-  //   case "checkout.session.async_payment_failed":
-  //     // const checkoutSessionAsyncPaymentFailed = event.data.object;
-  //     break;
-  //   case "checkout.session.async_payment_succeeded":
-  //     // const checkoutSessionAsyncPaymentSucceeded = event.data.object;
-  //     break;
-  //   case "checkout.session.completed":
-  //     const session = event.data.object;
-  //     try {
-  //       // await fulfillOrder(session);
-  //       console.log("Done");
-  //     } catch (error) {
-  //       console.error("Fulfillment error:", error);
-  //     }
-  //     break;
-  //   default:
-  //     console.log(`Unhandled event type ${event.type}`);
+  let validity = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  if (typeof session.subscription === "string") {
+    const subscription = await stripe.subscriptions.retrieve(session.subscription);
+    if (subscription.current_period_end) {
+      validity = new Date(subscription.current_period_end * 1000);
+    }
+  }
+
+  await prisma.membership.create({
+    data: {
+      userId,
+      membershipId: session.id,
+      membershipType: "PREMIUM",
+      paymentId:
+        typeof session.payment_intent === "string" ? session.payment_intent : null,
+      paymentStatus: session.payment_status,
+      totalAmt: (session.amount_total ?? 0) / 100,
+      paymentDate: new Date(),
+      paymentValidity: validity,
+      membershipStatus: "ACTIVE",
+    },
+  });
 }
 
-// return new Response("RESPONSE EXECUTE", {
-//   status: 200,
-// });
-// }
+export async function POST(request: NextRequest) {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!secretKey || !endpointSecret) {
+    return NextResponse.json(
+      { error: "Webhook is not configured" },
+      { status: 503 }
+    );
+  }
+
+  const stripe = new Stripe(secretKey);
+  const body = await request.text();
+  const signature = request.headers.get("stripe-signature");
+
+  let event: Stripe.Event;
+  try {
+    if (!signature) throw new Error("Missing stripe-signature header");
+    event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
+
+  try {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      await fulfillCheckout(session, stripe);
+    }
+  } catch (error) {
+    console.error("Error handling webhook event:", error);
+    return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
+  }
+
+  return NextResponse.json({ received: true }, { status: 200 });
+}

@@ -24,7 +24,6 @@ import { entriesToMarkdown } from "@/lib/helper";
 import MDEditor from "@uiw/react-md-editor";
 import { useSession } from "next-auth/react";
 import EducationForm from "./EducationForm";
-// import html2pdf from "html2pdf.js/dist/html2pdf.min";
 import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 
@@ -154,27 +153,15 @@ function ResumeBuilder({ initialContent }: Props) {
     const element = document.getElementById("resume-pdf");
     if (element) {
       setPdfIsGenerating(true);
-      doc.text(element.innerText, 10, 10);
-      doc.save(pdfName + "-resume.pdf");
+      try {
+        doc.text(element.innerText, 10, 10);
+        doc.save(pdfName + "-resume.pdf");
+      } finally {
+        setPdfIsGenerating(false);
+      }
     } else {
       console.error("Something went wrong while generating PDF");
     }
-    // try {
-    // const opstion = {
-    //   margin: [15, 15],
-    //   filename: `${user?.name}-resume.pdf`,
-    //   image: { type: "jpeg", quality: 0.98 },
-    //   html2canvas: { scale: 2 },
-    //   jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    // };
-    // html2pdf().set(opstion).from(element).save();
-    // html2pdf().from(element).set(opstion).save();
-    // await html2pdf(element, opstion);
-    // } catch (error) {
-    //   console.error(error);
-    // } finally {
-    //   setPdfIsGenerating(false);
-    // }
   };
   useEffect(() => {
     // console.log(improvedContent);

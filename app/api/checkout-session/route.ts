@@ -1,10 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { auth } from "@/auth";
 
-const stripe = new Stripe((process.env.STRIPE_SECRET_KEY as string) || "");
+const createCheckout = async () => {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json(
+      { error: "Payments are not configured" },
+      { status: 503 }
+    );
+  }
 
-const createCheckout = async (req: NextRequest) => {
-  const { email } = await req.json();
+  const session = await auth();
+  if (!session?.user?.id || !session.user.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
   try {
     const prices = await stripe.prices.list({
       limit: 1,
@@ -19,12 +31,19 @@ const createCheckout = async (req: NextRequest) => {
       ],
       success_url: `${process.env.WEB_URL}/success`,
       cancel_url: `${process.env.WEB_URL}?canceled=true`,
-      customer_email: email,
+      customer_email: session.user.email,
+      client_reference_id: session.user.id,
+      metadata: { userId: session.user.id },
+      subscription_data: { metadata: { userId: session.user.id } },
     });
     return NextResponse.json({ paymentIntent }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: error }, { status: 500 });
+    console.error("Failed to create checkout session:", error);
+    return NextResponse.json(
+      { error: "Failed to create checkout session" },
+      { status: 500 }
+    );
   }
 };
 
-export { createCheckout as GET, createCheckout as POST };
+export { createCheckout as POST };

@@ -17,7 +17,8 @@ const model = genAi.getGenerativeModel({
 
 export async function askAiQuestion({ message }: { message: string }) {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findUnique({
     where: {
       email,

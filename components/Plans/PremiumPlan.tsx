@@ -11,16 +11,16 @@ function PremiumPlan() {
   }
   const { data: session } = useSession();
   const handleBuyButton = async () => {
-    if (!session) signIn();
+    if (!session) {
+      signIn();
+      return;
+    }
     const response = await fetch("/api/checkout-session", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        price: 90,
-        email: session?.user?.email,
-      }),
+      body: JSON.stringify({}),
     });
 
     if (!response.ok) {

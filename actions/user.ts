@@ -20,9 +20,9 @@ interface Updatinguser {
 }
 
 export async function updateUser(data: Updatinguser): Promise<any> {
-  // console.log("Updating user with data:", data);
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findFirst({
     where: {
       email,
@@ -71,7 +71,8 @@ export async function updateUser(data: Updatinguser): Promise<any> {
 }
 export async function getUserOnBoardingStatus() {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findFirst({
     where: {
       email,
@@ -100,7 +101,8 @@ export async function getUserOnBoardingStatus() {
 
 export async function getUserAccountSetup() {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findFirst({
     where: {
       email: email,
@@ -126,7 +128,8 @@ export async function getUserAccountSetup() {
 
 export async function generateOtp() {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findFirst({
     where: {
       email,
@@ -135,7 +138,6 @@ export async function generateOtp() {
   if (!user) throw new Error("User not found");
   try {
     const otp = Math.floor(Math.random() * 900000) + 100000;
-    console.log(otp)
     const hwOtp = await hash(otp.toString(), 10);
     const expireTime = new Date().getTime() + 60 * 60 * 1000;
     const totalForgotPasswordInputTry = 3;
@@ -166,7 +168,8 @@ export async function generateOtp() {
 
 export async function checkOtp() {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findFirst({
     where: {
       email: email,
@@ -193,7 +196,8 @@ export async function checkOtp() {
 
 export async function verifyOtp(otp: string) {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findFirst({
     where: {
       email,
@@ -256,7 +260,8 @@ export async function verifyOtp(otp: string) {
 
 export async function getUserRole() {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) return null;
+  const email = session.user.email;
   const user = await prisma.user.findFirst({
     where: {
       email,
@@ -270,7 +275,8 @@ export async function getUserRole() {
 }
 export const getUserDetails = async () => {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findFirst({
     where: {
       email,

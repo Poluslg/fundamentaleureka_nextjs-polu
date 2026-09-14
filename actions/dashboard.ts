@@ -3,23 +3,12 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import OpenAI from "openai";
 
 const genAi = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const model = genAi.getGenerativeModel({
   model: "gemini-3.5-flash",
-  // generationConfig: {
-  //   maxOutputTokens: 140,
-  //   temperature: 0.4,
-  // },
 });
-
-
-// const openRouter = new OpenAI({
-//   baseURL: "https://openrouter.ai/api/v1",
-//   apiKey: process.env.OPENROUTER_API_KEY!,
-// });
 
 export const generateAiInsights = async (industry: string) => {
   const prompt = `
@@ -62,7 +51,8 @@ export const generateAiInsights = async (industry: string) => {
 
 export async function getIndurstryInsights() {
   const session = await auth();
-  const email = session?.user?.email as string;
+  if (!session?.user?.email) throw new Error("Unauthorized");
+  const email = session.user.email;
   const user = await prisma.user.findUnique({
     where: {
       email,

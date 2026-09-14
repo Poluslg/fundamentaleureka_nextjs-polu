@@ -1,25 +1,41 @@
-import { Resend } from "resend";
+import nodemailer, { type Transporter } from "nodemailer";
 
-const resend = new Resend(process.env.RESEND_API);
+type Props = { sendTo: string; subject: string; html: string };
 
-type Props = { sendTo: string; subject: string; html: any };
+let transporter: Transporter | null = null;
+
+function getTransporter() {
+  if (transporter) return transporter;
+
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_EMAIL;
+  const pass = process.env.SMTP_PASSWORD;
+
+  if (!host || !user || !pass) {
+    throw new Error("SMTP is not configured");
+  }
+
+  transporter = nodemailer.createTransport({
+    host,
+    port: Number(process.env.SMTP_PORT) || 465,
+    secure: Number(process.env.SMTP_PORT) === 587 ? false : true,
+    auth: { user, pass },
+  });
+
+  return transporter;
+}
 
 const sendEmail = async ({ sendTo, subject, html }: Props) => {
   try {
-    const { data, error } = await resend.emails.send({
-      from: "FundaMentalEduruka <support@support.prahladbiswas.me>",
+    return await getTransporter().sendMail({
+      from: `"FundaMentalEureka" <${process.env.SMTP_EMAIL}>`,
       to: sendTo,
-      subject: subject,
-      html: html,
+      subject,
+      html,
     });
-
-    if (error) {
-      return { error };
-    }
-
-    return data;
   } catch (error) {
-    return error;
+    console.error("Failed to send email:", error instanceof Error ? error.message : error);
+    throw new Error("Failed to send email");
   }
 };
 
